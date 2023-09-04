@@ -1,3 +1,7 @@
+# Add the imports to the top
+# These imports let you define how Dagster communicates with DuckDB
+from dagster_duckdb_pandas import DuckDBPandasIOManager
+
 from dagster import (
     AssetSelection,
     Definitions,
@@ -25,10 +29,14 @@ io_manager = FilesystemIOManager(
     base_dir="data",  # Path is built relative to where `dagster dev` is run
 )
 
+# Insert this section anywhere above your `defs = Definitions(...)`
+database_io_manager = DuckDBPandasIOManager(database="analytics.hackernews")
+
 defs = Definitions(
     assets=all_assets,
     schedules=[hackernews_schedule],
     resources={
         "io_manager": io_manager,
+        "database_io_manager": database_io_manager,  # Define the I/O manager here
     },
 )

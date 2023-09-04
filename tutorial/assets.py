@@ -28,7 +28,9 @@ def topstory_ids() -> List:  # modify return type signature
     )
 
 
-@asset  # remove deps parameter
+@asset(
+    io_manager_key="database_io_manager",  # Addition: `io_manager_key` specified
+)
 def topstories(
     context: AssetExecutionContext,
     topstory_ids: List,  # add topstory_ids as a function argument
