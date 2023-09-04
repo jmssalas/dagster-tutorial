@@ -1,3 +1,4 @@
+from typing import Dict, List  # add imports to the top of `assets.py`
 import json
 import os
 
@@ -18,21 +19,23 @@ from dagster import (
 
 
 @asset
-def topstory_ids() -> None:
+def topstory_ids() -> List:  # modify return type signature
     newstories_url = "https://hacker-news.firebaseio.com/v0/topstories.json"
     top_new_story_ids = requests.get(newstories_url).json()[:100]
 
-    os.makedirs("data", exist_ok=True)
-    with open("data/topstory_ids.json", "w") as f:
-        json.dump(top_new_story_ids, f)
+    return (
+        top_new_story_ids  # return top_new_story_ids and the I/O manager will save it
+    )
 
 
-@asset(deps=[topstory_ids])
-def topstories(context: AssetExecutionContext) -> None:
+@asset  # remove deps parameter
+def topstories(
+    context: AssetExecutionContext,
+    topstory_ids: List,  # add topstory_ids as a function argument
+) -> pd.DataFrame:  # modify the return type signature
     logger = get_dagster_logger()
 
-    with open("data/topstory_ids.json", "r") as f:
-        topstory_ids = json.load(f)
+    # remove manually loading topstory_ids
 
     results = []
     for item_id in topstory_ids:
@@ -45,7 +48,7 @@ def topstories(context: AssetExecutionContext) -> None:
             logger.info(f"Got {len(results)} items so far.")
 
     df = pd.DataFrame(results)
-    df.to_csv("data/topstories.csv")
+    # remove manually saving df
 
     context.add_output_metadata(
         metadata={
@@ -54,13 +57,18 @@ def topstories(context: AssetExecutionContext) -> None:
         }
     )
 
+    return df  # return df and the I/O manager will save it
 
-@asset(deps=[topstories])
-def most_frequent_words(context: AssetExecutionContext) -> None:
+
+@asset  # remove deps parameter
+def most_frequent_words(
+    context: AssetExecutionContext,
+    topstories: pd.DataFrame,  # add topstories as a function argument
+) -> Dict:  # modify the return type signature
     stopwords = ["a", "the", "an", "of", "to",
                  "in", "for", "and", "with", "on", "is"]
 
-    topstories = pd.read_csv("data/topstories.csv")
+    # remove manually loading topstory_ids
 
     # loop through the titles and count the frequency of each word
     word_counts = {}
@@ -93,8 +101,9 @@ def most_frequent_words(context: AssetExecutionContext) -> None:
     # Convert the image to Markdown to preview it within Dagster
     md_content = f"![img](data:image/png;base64,{image_data.decode()})"
 
-    with open("data/most_frequent_words.json", "w") as f:
-        json.dump(top_words, f)
+    # remove manually saving top_words
 
-    # Attach the Markdown content as metadata to the asset
-    context.add_output_metadata(metadata={"plot": MetadataValue.md(md_content)})
+    context.add_output_metadata(
+        metadata={"plot": MetadataValue.md(md_content)})
+
+    return top_words  # return top_words and the I/O manager will save it
