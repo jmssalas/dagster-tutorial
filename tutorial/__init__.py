@@ -9,9 +9,11 @@ from dagster import (
     define_asset_job,
     load_assets_from_modules,
     FilesystemIOManager,  # Update the imports at the top of the file to also include this
+    EnvVar,
 )
 
 from . import assets
+from .resources import DataGeneratorResource
 
 all_assets = load_assets_from_modules([assets])
 
@@ -32,11 +34,17 @@ io_manager = FilesystemIOManager(
 # Insert this section anywhere above your `defs = Definitions(...)`
 database_io_manager = DuckDBPandasIOManager(database="analytics.hackernews")
 
+# Configure the resource with an environment variable here
+datagen = DataGeneratorResource(
+    num_days=EnvVar.int("HACKERNEWS_NUM_DAYS_WINDOW"),
+)
+
 defs = Definitions(
     assets=all_assets,
     schedules=[hackernews_schedule],
     resources={
         "io_manager": io_manager,
         "database_io_manager": database_io_manager,  # Define the I/O manager here
+        "hackernews_api": datagen,  # Add the newly-made resource here
     },
 )
